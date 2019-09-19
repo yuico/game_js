@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>deserts!</title>
+
+<!-- Welcome to ZIM at https://zimjs.com - Code Creativity!                              -->
+<!-- ZIM runs on the HTML Canvas powered by JavaScript and CreateJS https://createjs.com -->
+<!-- Founded by Inventor Dan Zen - http://danzen.com - Canadian New Media Award Winner   -->
+<!-- ZIM is free to use. You can donate to help improve ZIM at https://zimjs.com/donate  -->
+
+<script src="https://zimjs.org/cdn/1.2.0/createjs_min.js"></script>
+<script src="https://zimjs.org/cdn/10.5.1/zim.js"></script>
+<!-- use zimjs.com/distill for minified individual functions! -->
+<style>
+#bg {
+  width: 100%;
+  background-image: url("./assets/bgHeart.jpg");
+}
+</style>
+<script>
+
+// SCALING OPTIONS
+// scaling can have values as follows with full being the default
+// "fit"	sets canvas and stage to dimensions and scales to fit inside window size
+// "outside"	sets canvas and stage to dimensions and scales to fit outside window size
+// "full"	sets stage to window size with no scaling
+// "tagID"	add canvas to HTML tag of ID - set to dimensions if provided - no scaling
+
+let scaling = "fit"; // this will resize to fit inside the screen dimensions
+let width = 1024;
+let height = 768;
+let color = black; // ZIM colors like green, blue, pink, faint, clear, etc.
+let outerColor = dark; // any HTML colors like "violet", "#333", etc. are fine to use
+let desertsAsset = [];
+let fruitsAsset = [];
+
+
+/*comment for assignment: 
+  two types of food, 
+  one type(deserts) is bad for health the other type(fruits) is good for health.*/
+loop(5, function(i) {
+  desertsAsset.push("bonus" + i + ".png");
+})
+
+loop(4, function(i) {
+  fruitsAsset.push("fruit" + i + ".png");
+})
+
+
+let assets = desertsAsset.concat("Pig1.png", "boom.png", "boom.mp3", "tink.mp3", fruitsAsset);
+let path = "assets/";
+
+let frame = new Frame(scaling, width, height, color, outerColor, assets, path);
+frame.on("ready", function() {
+    zog("ready from ZIM Frame"); // logs in console (F12 - choose console)
+
+    let stage = frame.stage;
+    let stageW = frame.width;
+    let stageH = frame.height;
+
+    let options = [
+      [-300, rand(stageH), stageW+300, rand(stageH)],
+      [stageW+300, rand(stageH), -300, rand(stageH)],
+      [rand(stageW), -300, rand(stageW), stageH+300],
+      [rand(stageW), stageH+300, rand(stageW), -300]
+    ];
+
+    let deserts = new Container(stageW, stageH).addTo();
+    let fruits = new Container(stageW, stageH).addTo();
+
+    interval({min:500, max:3000}, function () {
+      let option = shuffle(options)[0];
+      frame.asset(shuffle(desertsAsset)[0])
+        .clone()
+        .cur()
+        .centerReg()
+        .loc(option[0], option[1], deserts)
+        .animate({
+          props:{rotation:[-360, 360]},
+          time:rand(3000,8000),
+          loop:true,
+          ease:"linear"
+        })
+        .animate({
+          props:{x:option[2], y:option[3]},
+          ease:"linear",
+          time:rand(6000, 10000)
+        });
+
+        frame.asset(shuffle(fruitsAsset)[0])
+        .clone()
+        .cur()
+        .centerReg()
+        .loc(option[0], option[1], fruits)
+        .animate({
+          props:{rotation:[-360, 360]},
+          time:rand(3000,8000),
+          loop:true,
+          ease:"linear"
+        })
+        .animate({
+          props:{x:option[2], y:option[3]},
+          ease:"linear",
+          time:rand(6000, 10000)
+        });
+    });
+
+    let explosion = new Sprite(frame.asset("boom.png"), 8,6).sca(2); 
+
+    /*comment for assignment: 
+    if the pig meet the deserts, the size become bigger.
+    on the other hand if the pig meet the fruits, the size become small.*/
+
+    function explode(obj) {
+      obj.removeFrom();
+      explosion.centerReg().loc(obj).run();
+      frame.asset("boom.mp3").play();
+    }
+
+    function bigbig(obj) {
+      obj.sca(.4).centerReg();
+      frame.asset("tink.mp3").play();
+    }
+
+    function smallsmall(obj) {
+      obj.sca(.1).centerReg();
+    }
+
+    let Pig1 = frame.asset("Pig1.png").sca(.2).centerReg();
+    new MotionController(Pig1, "keydown", null, null, new Boundary(
+      Pig1.width/2,
+      Pig1.height/2,
+      stageW-Pig1.width,
+      stageH-Pig1.height
+    ));
+
+
+    let balls = new Container().addTo().bot();
+
+    stage.on("stagemousedown", function (e) {
+      let mouseX = e.stageX/stage.scaleX;
+      let mouseY = e.stageY/stage.scaleY;
+      let laser = new Shape().addTo(stage, 1);
+      laser.graphics.s(pink).ss(4).mt(Pig1.x, Pig1.y).lt(mouseX, mouseY);
+      let ball = new Circle(20).addTo(balls).loc(Pig1).animate({
+        props:{x:mouseX, y:mouseY, scale:3},
+        time:300,
+        ease:"linear",
+        call:function (target) {
+          target.removeFrom();
+          laser.removeFrom();
+        }
+      });
+
+      laser.setMask(ball);
+    });
+
+
+    Ticker.add(function () {
+
+      deserts.loop(function(d) {
+        if(d.hitTestCircle(Pig1)) {
+          bigbig(Pig1);
+        }
+
+        balls.loop(function (ball) {
+          if(d.hitTestCircle(ball)) {
+            explode(d);
+          }
+        }, true);
+
+      }, true);
+
+      fruits.loop(function(f) {
+        if (f.hitTestCircle(Pig1)) {
+          smallsmall(Pig1);
+        }
+
+      }, true);
+
+
+    });
+
+    stage.update(); // this is needed to show any changes
+
+}); // end of ready
+
+
+
+
+</script>
+
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+
+</head>
+
+<body>
+<!-- canvas with id="myCanvas" is made by zim Frame -->
+<div id="bg"></div>
+</body>
+</html>
